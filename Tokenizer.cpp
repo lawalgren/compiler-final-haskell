@@ -61,7 +61,7 @@ class Tokenizer {
 				t.insertType(Token::ascDigit);
 				matched = true;
 			}
-			if (regex_match(remaining, sm, regex("(e|E)(+|-)[0-9]+"))) {
+			if (regex_match(remaining, sm, regex(R"((e|E)(\+|-)[0-9]+)"))) {
 				t.insertType(Token::exponent);
 				matched = true;
 			}
