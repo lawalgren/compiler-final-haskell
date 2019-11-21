@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include "HFunction.cpp"
+#include "Parser.cpp"
 using namespace std;
 ofstream outfile;
 string FILE_NAME = "transpiled.cpp"
