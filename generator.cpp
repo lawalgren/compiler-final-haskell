@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string>
+#include <fstream>
 #include "HFunction.cpp"
 #include "Parser.cpp"
 using namespace std;
 ofstream outfile;
-string FILE_NAME = "transpiled.cpp"
+string FILE_NAME = "transpiled.cpp";
 
 
 void preamble() {
