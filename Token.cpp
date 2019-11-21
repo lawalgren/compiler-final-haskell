@@ -3,7 +3,6 @@
 //
 #pragma once
 #include <string>
-#include <unordered_set>
 #include <utility>
 
 using namespace std;
@@ -11,45 +10,41 @@ using namespace std;
 class Token {
     public:
         typedef enum _TokenTypes {
-            special,
-            whitechar,
+            keyword,
+            name,
+            infix_op,
+            multiplicative_op,
+            plus_minus,
+            conditional_op,
+            pattern,
+            logical_and,
+            logical_or,
+            vertical_bar,
+            colon,
+            plus_plus,
+            equals,
+            open_paren,
+            close_paren,
+            h_char,
+            h_string,
+            h_int,
+            h_float,
             newline,
-            dashes,
-            opencom,
-            closecom,
-            ascSmall,
-            // uniSmall,
-            ascLarge,
-            // uniLarge,
-            ascSymbol,
-            // uniSymbol,
-            ascDigit,
-            // uniDigit,
-            reservedop,
-            exponent,
-            charesc,
-            none,
+            whitechar,
             eof,
-            // ascii
+            none
         } Type;
 
     private:
-        unordered_set<Type> types;
+        Type type;
         string contents;;
 
     public:
-        Token() {
-           types = {none};
-           contents = "";
+        explicit Token(Type _type=none, string _contents="") {
+           type = _type;
+           contents = std::move(_contents);
         }
 
-        bool contains(Type type) { return(types.find(type) != types.end()); }
-
-        void insertType(Type type) {
-            if(contains(none)) types.clear();
-            types.emplace(type);
-        }
-
+        Type getType() { return type; }
         string getContents() { return contents; }
-        void setContents(string _contents) { contents = std::move(_contents); }
 };
