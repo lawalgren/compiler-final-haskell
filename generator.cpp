@@ -12,8 +12,14 @@ void preamble() {
     outfile << "#include <iostream>" << endl << "using namespace std;" << endl << endl << "int main() {" << endl;
 }
 
+void postable() {
+    outfile << "return 0;" << endl << "}" << endl;
+    outfile.close();
+}
+
 int main() {
+    preamble;
 
-
+    postamble;
     return 0;
 }
