@@ -9,10 +9,13 @@ string FILE_NAME = "transpiled.cpp"
 
 void preamble() {
     outfile.open(FILE_NAME);
-    outfile << "#include <iostream>" << endl << "using namespace std;" << endl << endl << "int main() {" << endl;
+    outfile << "#include <iostream>" << endl<< "#include <vector>"<< endl 
+    << "#include <string>" << endl << "using namespace std;" << endl;
 }
 
-void postable() {
+
+
+void postamble() {
     outfile << "return 0;" << endl << "}" << endl;
     outfile.close();
 }
