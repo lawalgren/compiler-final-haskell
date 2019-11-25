@@ -30,7 +30,8 @@ struct HFunction{
     string name;
     map<HCondition,string, Type> logic; // map condition to returned value
     map<string,string, Type> where; // map variable name to value
-    vector<string> params; // list of parameters to the function
+    map<string, Type> params; // list of parameters to the function
     bool purity;
+    Type return_type;
     vector<string> commands;
 };

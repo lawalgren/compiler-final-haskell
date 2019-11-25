@@ -4,7 +4,6 @@
 #pragma once
 #include <regex>
 #include <vector>
-#include <unordered_set>
 #include <iostream>
 #include "Token.cpp"
 
@@ -29,20 +28,18 @@ public:
 		        while(!remaining.empty() && remaining.substr(0,2) != "-}")
 		            remaining = remaining.substr(1);
 		    }
-		    else if (regex_match(remaining, sm, regex(R"(([^\n]+::.*).*)"))) { //eat type decorators
-                while(!remaining.empty() && remaining[0] != '\n')
-                    remaining = remaining.substr(1);
-            }
 		    if(tokens[-1].getType() != Token::newline && remaining[0] == ' ') { // eat non-indenting spaces
 		        while(remaining[0] == ' ')
 		            remaining = remaining.substr(1);
 		    }
 		    else {
                 Token t;
-                if (regex_match(remaining, sm, regex(R"((getLine|words|unlines|read|show|putStrLn|do).*)")))
+                if (regex_match(remaining, sm, regex(R"(([^\n]+::.*).*)"))) //match type decorators
+                   t = Token(Token::type_decorator, sm[1]);
+                else if (regex_match(remaining, sm, regex(R"((getLine|words|unlines|read|show|putStrLn|do|where|if|then|else).*)")))
                     t = Token(Token::keyword, sm[1]);
-                else if (regex_match(remaining, sm, regex(R"((`[A-Za-z_]+`).*)")))
-                    t = Token(Token::infix_op, sm[1]);
+                else if (regex_match(remaining, sm, regex(R"((Int|String|Char|Float|\[Int\]|\[String\]|\[Char\]|\[Float\]).*)")))
+                    t = Token(Token::datatype, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((\(.*:.*\)).*)")))
                     t = Token(Token::pattern, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((".*").*)")))
@@ -53,7 +50,7 @@ public:
                     t = Token(Token::h_float, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"(([0-9]+).*)")))
                     t = Token(Token::h_int, sm[1]);
-                else if (regex_match(remaining, sm, regex(R"((\*|/).*)")))
+                else if (regex_match(remaining, sm, regex(R"((\*|/|\`mod\`|\`div\`).*)")))
                     t = Token(Token::multiplicative_op, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((\+\+).*)")))
                     t = Token(Token::plus_plus, sm[1]);
@@ -110,6 +107,4 @@ public:
 		if (t.getType() != Token::eof) it++;
 		return t;
 	}
-
-	vector<Token> getTokens() { return tokens;}
 };

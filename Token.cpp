@@ -11,8 +11,9 @@ class Token {
     public:
         typedef enum _TokenTypes {
             keyword,
+            datatype,
             name,
-            infix_op,
+            type_decorator,
             multiplicative_op,
             plus_minus,
             conditional_op,
