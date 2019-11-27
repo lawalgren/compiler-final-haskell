@@ -126,10 +126,22 @@ public:
     }
 
     void conditionalExp(map<pair<HCondition, HExpression>, HFunction::Type> &logic) {
-
+        if(t.peek().getContents() != "if") {
+            cout << "error";
+            return;
+        }
+        t.next();
+        HCondition hc;
+        logical(hc);
+        t.next();
+        auto then = expression();
+        t.next();
+        auto _else = expression();
+        pair<HCondition, HExpression> key1 = {hc, then.first};
+        pair<HCondition, HExpression> key1 = {hc, then.first};
     }
 
-    HCondition logical() {
+    void logical(HCondition &hc) {
 
     }
 
