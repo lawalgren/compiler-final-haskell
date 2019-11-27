@@ -34,5 +34,5 @@ struct HFunction{
     map<string, Type> params; // list of parameters to the function
     bool purity;
     Type return_type;
-    vector<string> commands;
+    vector<HExpression> commands;
 };

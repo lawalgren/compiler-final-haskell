@@ -2,25 +2,28 @@
 // Created by lucas on 11/20/19.
 //
 
-#include <string>
-#include <vector>
+#include <utility>
+
+#include "Token.cpp"
 
 using namespace std;
 
-struct Node {
-    int idata;
-    string sdata;
-    char cdata;
-    float fdata;
-    vector<int> vidata;
-    vector<string> vsdata;
-    vector<char> vcdata;
-    vector<float> vfdata;
-};
-
-struct HExpression {
+class HExpression {
     HExpression* left;
-    Node data;
-    string op;
+    Token data;
     HExpression* right;
+
+public:
+
+    explicit HExpression(Token _data = Token(), HExpression* _left = nullptr, HExpression* _right = nullptr) {
+        data = std::move(_data);
+        left = _left;
+        right = _right;
+    }
+
+    explicit HExpression(HExpression *&hc) {
+            data = hc->data;
+            left = hc->left;
+            right = hc->right;
+    }
 };

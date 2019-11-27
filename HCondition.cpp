@@ -8,9 +8,9 @@
 using namespace std;
 
 struct HCondition {
-    HExpression *left;
+    HExpression *left = nullptr;
     string op;
-    HExpression *right;
+    HExpression *right = nullptr;
     HCondition operator!() {
         HCondition hc;
         hc.left = left;

@@ -13,6 +13,7 @@ class Token {
             keyword,
             datatype,
             name,
+            get_line,
             type_decorator,
             multiplicative_op,
             plus_minus,
@@ -34,6 +35,7 @@ class Token {
             whitechar,
             eof,
             end_of_function,
+            function_call_continue,
             none
         } Type;
 

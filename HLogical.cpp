@@ -7,9 +7,9 @@
 using namespace std;
 
 struct HLogical {
-    HCondition *left;
+    HCondition *left = nullptr;
     string op;
-    HCondition *right;
+    HCondition *right = nullptr;
 };
 
 HLogical operator!(HLogical &hl) {

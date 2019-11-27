@@ -40,6 +40,8 @@ public:
                     t = Token(Token::keyword, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((Int|String|Char|Float|\[Int\]|\[String\]|\[Char\]|\[Float\]).*)")))
                     t = Token(Token::datatype, sm[1]);
+                else if (regex_match(remaining, sm, regex(R"(([A-Za-z_]+) *-> *getLine.*)")))
+                    t = Token(Token::get_line, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((\(.*:.*\)).*)")))
                     t = Token(Token::pattern, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((".*").*)")))

@@ -8,12 +8,15 @@
 #include <utility>
 #include <vector>
 #include <regex>
+#include <algorithm>
 
 using namespace std;
 
 class Parser {
     vector<HFunction> functions_list;
+    vector<string> function_table;
     Tokenizer t;
+    string error = "";
 public:
     explicit Parser(string program) : t(move(program)) {
 
@@ -35,6 +38,7 @@ public:
 
        // get function name
        func.name = t.next().getContents();
+       function_table.emplace_back(func.name);
 
        // get function parameters and map them to their type
        vector<string> param_vector = params();
@@ -75,7 +79,9 @@ public:
        else if (t.peek().getContents() == "do") {
            t.next();
            func.purity = false;
-           func.commands = commands();
+           auto a = commands();
+           func.commands = a.first;
+           func.where = a.second;
        }
        else {
            func.logic = {};
@@ -165,38 +171,161 @@ public:
     }
 
     pair<HExpression, HFunction::Type> expression() {
-
+        auto *he = new HExpression();
+        expressionHelper(he);
+        pair<HExpression, HFunction::Type> ret = {*he,getType(he)};
+        return ret;
     }
 
-    void term() {
+    HFunction::Type getType(HExpression* he) {
 
+    } // TODO: Extract type from an arbitrary expression
+
+    bool expressionHelper(HExpression* &he) {
+        Token t1 = t.next();
+        auto* sub = new HExpression();
+        HExpression* left = nullptr;
+        Token last, next;
+        while (term(he)) {
+            if (t.peek().getType() != Token::plus_minus || t.peek().getType() != Token::plus_plus || t.peek().getType() != Token::colon)
+                break;
+            else {
+                next = t.next();
+                if (left != nullptr)
+                    left = new HExpression(last,left,sub);
+                else
+                    left = new HExpression(sub);
+            }
+            sub = new HExpression();
+            last = next;
+        }
+        if (left != nullptr)
+            he = new HExpression(last, left, sub);
+        else
+            he = new HExpression(sub);
+        return true;
     }
 
-    void factor() {
+    bool term(HExpression* &he) {
+        Token t1 = t.next();
+        auto* sub = new HExpression();
+        HExpression* left = nullptr;
+        Token last, next;
+        while (unaryExpression(he)) {
+            if (t.peek().getType() != Token::multiplicative_op)
+                break;
+            else {
+                next = t.next();
+                if (left != nullptr)
+                    left = new HExpression(last,left,sub);
+                else
+                    left = new HExpression(sub);
+            }
+            sub = new HExpression();
+            last = next;
+        }
+        if (left != nullptr)
+            he = new HExpression(last, left, sub);
+        else
+            he = new HExpression(sub);
+        return true;
+    }
 
+    bool unaryExpression(HExpression* &he) {
+        Token operation = t.peek();
+        if (operation.getType() == Token::plus_minus) {
+            auto* sub = new HExpression();
+            operation = t.next();
+            if (unaryExpression(sub)) {
+                he = new HExpression(operation, nullptr, sub);
+                return true;
+            }
+        } else return (primaryExpression(he));
+    }
+
+    bool primaryExpression(HExpression* &he) {
+       Token primary = t.peek();
+       if (primary.getType() == Token::name) {
+           if (find(function_table.begin(), function_table.end(), primary.getContents()) != function_table.end())
+               return functionCall(he);
+           else {
+               he = new HExpression(t.next()); // the next token is a variable name
+           }
+       } else {
+            if (primary.getType() == Token::open_paren) {
+                t.next(); // eliminate open paren
+                auto* sub = new HExpression();
+                if (expressionHelper(he)) {
+                    he = new HExpression(sub);
+                    if (t.next().getType() != Token::close_paren) {
+                        error = "Error: Mismatched (";
+                        return false;
+                    } else return true;
+                } else {
+                    error = "Error: Expected expression within ()";
+                    return false;
+                }
+            } else {
+                he = new HExpression(t.next()); // the next token is a constant
+            }
+       }
+    }
+
+    bool paramTree(HExpression* &he) {
+        auto *sub = new HExpression();
+        HExpression *left = nullptr;
+        while (primaryExpression(sub)) {
+            if (t.peek().getType() == Token::end_of_function || t.peek().getType() == Token::close_paren)
+                return false;
+            if (left != nullptr)
+                left = new HExpression(Token(Token::function_call_continue), left, sub);
+            else
+                left = new HExpression(sub);
+        }
+        if (left != nullptr)
+            he = new HExpression(Token(Token::function_call_continue), left, sub);
+        else
+            he = new HExpression(sub);
+        return true;
     }
 
     vector<string> params() {
-
+        Token token = t.peek();
+        vector<string> param_list;
+        while(token.getContents() != "=" && token.getContents() != "|")
+            param_list.emplace_back(t.next());
+        return param_list;
     }
 
-    void functionCall() {
-
+    bool functionCall(HExpression* &he) {
+        Token name = t.next();
+        he = new HExpression(name);
+        auto* sub = new HExpression();
+        paramTree(sub);
+        he = new HExpression(name, nullptr, sub);
+        return true;
     }
 
-    vector<string> commands() {
-
-    }
-
-    void parameter() {
-
-    }
-
-    void constant() {
-
-    }
-
-    void variable() {
-
+    pair<vector<HExpression>,map<pair<string, HExpression>, HFunction::Type>> commands() {
+        Token tok = t.peek();
+        vector<HExpression> command_list;
+        map<pair<string, HExpression>, HFunction::Type> lets;
+        while(tok.getType() != Token::end_of_function) {
+            tok = t.next();
+            if(tok.getContents() == "let") {
+                auto a = assignment();
+                lets[a.first] = a.second;
+            } else if (tok.getType() == Token::get_line) {
+                auto* nested = new HExpression(Token(Token::name, tok.getContents()));
+                HExpression he(Token(Token::get_line), nullptr, nested);
+                command_list.emplace_back(he);
+            } else {
+                auto* he = new HExpression();
+                functionCall(he);
+                command_list.emplace_back(*he);
+            }
+        }
+        pair<vector<HExpression>,map<pair<string, HExpression>, HFunction::Type>> ret = {command_list, lets};
+        return ret;
     }
 };
