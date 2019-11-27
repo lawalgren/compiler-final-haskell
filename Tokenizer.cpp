@@ -16,7 +16,7 @@ class Tokenizer {
 public:
 	explicit Tokenizer(string line) {
 		string token, remaining = std::move(line), error;
-		bool matched = false;
+		bool fresh_newline = false;
 		smatch sm;
 
 		while (!remaining.empty()) {
@@ -24,7 +24,7 @@ public:
 		        while(!remaining.empty() && remaining[0] != '\n')
 		            remaining = remaining.substr(1);
 		    }
-		    else if(remaining.substr(0,2) == "{-") { // eat multiline comments
+		    if(remaining.substr(0,2) == "{-") { // eat multiline comments
 		        while(!remaining.empty() && remaining.substr(0,2) != "-}")
 		            remaining = remaining.substr(1);
 		    }
@@ -74,8 +74,10 @@ public:
                     t = Token(Token::close_paren, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"(( +).*)")))
                     t = Token(Token::whitechar, sm[1]);
-                else if (regex_match(remaining, sm, regex(R"((\n).*)")))
+                else if (regex_match(remaining, sm, regex(R"(([\r\n]+).*)"))) {
                     t = Token(Token::newline, sm[1]);
+                    fresh_newline = true;
+                }
                 else if (regex_match(remaining, sm, regex(R"((\|).*)")))
                     t = Token(Token::vertical_bar, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((:).*)")))
@@ -87,6 +89,12 @@ public:
                 }
                 remaining = remaining.substr(sm[1].length());
                 tokens.emplace_back(t);
+                if (fresh_newline && t.getType() == Token::whitechar)
+                    fresh_newline = false;
+                else if (fresh_newline) {
+                    tokens.emplace_back(Token(Token::end_of_function, ""));
+                    fresh_newline = false;
+                }
             }
 		}
 		if (error.empty()) it = tokens.begin();

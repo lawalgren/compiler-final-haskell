@@ -67,8 +67,10 @@ public:
        func.params = param_map;
 
        if (t.peek().getType() == Token::vertical_bar) {
-           func.logic = guards();
-           func.where = where();
+           func.logic = {};
+           guards(func.logic);
+           func.where = {};
+           where(func.where);
        }
        else if (t.peek().getContents() == "do") {
            t.next();
@@ -76,36 +78,54 @@ public:
            func.commands = commands();
        }
        else {
-           func.logic = result();
-           func.where = where();
+           func.logic = {};
+           result(func.logic);
+           func.where = {};
+           where(func.where);
        }
     }
 
-    map<HCondition, string, HFunction::Type> guards() {
-        map<HCondition, string, HFunction::Type> logic = {};
+    void guards(map<pair<HCondition, HExpression>, HFunction::Type> &logic) {
         if (t.peek().getType() != Token::vertical_bar)
-            return logic;
-
+            return;
+        t.next();
         HCondition hc = logical();
         t.next();
-        pair<string, HFunction::Type> exp = expression();
-        logic[hc][exp.first] = exp.second;
-
+        pair<HExpression, HFunction::Type> exp = expression();
+        pair<HCondition, HExpression> key = {hc, exp.first};
+        logic[key] = exp.second;
+        guards(logic);
     }
 
-    map<string, string, HFunction::Type> where() {
-
+    void where(map<pair<string, HExpression>, HFunction::Type> &vars) {
+        if (t.peek().getContents() == "where")
+            t.next();
+        if (t.peek().getType() != Token::name)
+            return;
+        auto a = assignment();
+        vars[a.first] = a.second;
+        where(vars);
     }
 
-    void assignment() {
-
+    pair<pair<string, HExpression>, HFunction::Type> assignment() {
+        string name = t.next().getContents();
+        t.next();
+        pair<HExpression, HFunction::Type> exp = expression();
+        pair<string, HExpression> key = {name, exp.first};
+        return {key, exp.second};
     }
 
-    map<HCondition, string, HFunction::Type> result() {
-
+     void result(map<pair<HCondition, HExpression>, HFunction::Type> &logic) {
+        if(t.peek().getContents() == "if")
+            conditionalExp(logic);
+        else {
+            auto exp = expression();
+            pair<HCondition, HExpression> key = {HCondition(), exp.first};
+            logic[key] = exp.second;
+        }
     }
 
-    void conditionalExp() {
+    void conditionalExp(map<pair<HCondition, HExpression>, HFunction::Type> &logic) {
 
     }
 
@@ -117,7 +137,7 @@ public:
 
     }
 
-    void expression() {
+    pair<HExpression, HFunction::Type> expression() {
 
     }
 

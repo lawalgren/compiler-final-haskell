@@ -33,6 +33,7 @@ class Token {
             newline,
             whitechar,
             eof,
+            end_of_function,
             none
         } Type;
 

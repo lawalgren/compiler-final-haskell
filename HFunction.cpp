@@ -28,8 +28,8 @@ struct HFunction{
         Integer, Float, String, Char, Vector_Integer, Vector_Float, Vector_Char, Vector_String, Void
     } Type;
     string name;
-    map<HCondition,string, Type> logic; // map condition to returned value
-    map<string,string, Type> where; // map variable name to value
+    map<pair<HCondition, HExpression>, Type> logic; // map condition to returned value
+    map<pair<string, HExpression>, Type> where; // map variable name to value
     map<string, Type> params; // list of parameters to the function
     bool purity;
     Type return_type;
