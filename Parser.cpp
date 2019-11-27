@@ -85,14 +85,15 @@ public:
        }
     }
 
-    void guards(map<pair<HCondition, HExpression>, HFunction::Type> &logic) {
+    void guards(map<pair<HLogical, HExpression>, HFunction::Type> &logic) {
         if (t.peek().getType() != Token::vertical_bar)
             return;
         t.next();
-        HCondition hc = logical();
+        HLogical hl;
+        logical(hl);
         t.next();
         pair<HExpression, HFunction::Type> exp = expression();
-        pair<HCondition, HExpression> key = {hc, exp.first};
+        pair<HLogical, HExpression> key = {hl, exp.first};
         logic[key] = exp.second;
         guards(logic);
     }
@@ -115,38 +116,52 @@ public:
         return {key, exp.second};
     }
 
-     void result(map<pair<HCondition, HExpression>, HFunction::Type> &logic) {
+     void result(map<pair<HLogical, HExpression>, HFunction::Type> &logic) {
         if(t.peek().getContents() == "if")
             conditionalExp(logic);
         else {
             auto exp = expression();
-            pair<HCondition, HExpression> key = {HCondition(), exp.first};
+            pair<HLogical, HExpression> key = {HLogical(), exp.first};
             logic[key] = exp.second;
         }
     }
 
-    void conditionalExp(map<pair<HCondition, HExpression>, HFunction::Type> &logic) {
+    void conditionalExp(map<pair<HLogical, HExpression>, HFunction::Type> &logic) {
         if(t.peek().getContents() != "if") {
             cout << "error";
             return;
         }
-        t.next();
-        HCondition hc;
+        t.next(); // remove "if" token
+        HLogical hc;
         logical(hc);
-        t.next();
+        t.next(); // remove "then" token
         auto then = expression();
-        t.next();
+        t.next(); // remove "else" token
         auto _else = expression();
-        pair<HCondition, HExpression> key1 = {hc, then.first};
-        pair<HCondition, HExpression> key1 = {hc, then.first};
+        pair<HLogical, HExpression> key1 = {hc, then.first};
+        pair<HLogical, HExpression> key2 = {!hc, _else.first};
+        logic[key1] = then.second;
+        logic[key2] = _else.second;
     }
 
-    void logical(HCondition &hc) {
-
+    void logical(HLogical &hl) {
+        auto *hc = new HCondition();
+        auto *hc2 = new HCondition();
+        conditional(hc);
+        string op = t.next().getContents();
+        conditional(hc2);
+        hl.left = hc;
+        hl.right = hc2;
+        hl.op = op;
     }
 
-    void conditional() {
-
+    void conditional(HCondition* &hc) {
+        auto exp1 = expression();
+        string op = t.next().getContents();
+        auto exp2 = expression();
+        hc->left = &exp1.first;
+        hc->right = &exp2.first;
+        hc->op = op;
     }
 
     pair<HExpression, HFunction::Type> expression() {
@@ -181,7 +196,7 @@ public:
 
     }
 
-    void vaiable() {
+    void variable() {
 
     }
 };
