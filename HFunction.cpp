@@ -10,20 +10,6 @@
 
 using namespace std;
 
-/*
-struct ReturnValue {
-    int iret;
-    string sret;
-    char cret;
-    float fret;
-    vector<int> viret;
-    vector<char> ciret;
-    vector<string> siret;
-    vector<float> firet;
-    ReturnType return_type;
-};
-*/
-
 struct HFunction{
     typedef enum _Type{
         Integer, Float, String, Char, Vector_Integer, Vector_Float, Vector_Char, Vector_String, Void

@@ -9,6 +9,7 @@
 #include <vector>
 #include <regex>
 #include <algorithm>
+#include <stack>
 
 using namespace std;
 
@@ -19,10 +20,13 @@ class Parser {
     string error = "";
 public:
     explicit Parser(string program) : t(move(program)) {
-
+        while(t.peek().getType() != Token::eof)
+           functions_list.emplace_back(function());
+        if(error != "")
+            cout << error << endl;
     }
 
-    void function() {
+    HFunction function() {
        HFunction func;
        func.purity = true;
 
@@ -89,6 +93,7 @@ public:
            func.where = {};
            where(func.where);
        }
+       return func;
     }
 
     void guards(map<pair<HLogical, HExpression>, HFunction::Type> &logic) {
@@ -177,9 +182,83 @@ public:
         return ret;
     }
 
-    HFunction::Type getType(HExpression* he) {
+    static HFunction::Type test(Token tok, bool &read, bool &show, bool &vector) {
+        if(tok.getType() == Token::v_h_string)
+            return HFunction::Vector_String;
+        else if(tok.getType() == Token::v_h_char)
+            return HFunction::Vector_Char;
+        else if(tok.getType() == Token::v_h_int)
+            return HFunction::Vector_Integer;
+        else if(tok.getType() == Token::v_h_float)
+            return HFunction::Vector_Float;
+        else if(tok.getType() == Token::h_string)
+            if (read&&vector)
+                return HFunction::Vector_Integer;
+            else if (read)
+                return HFunction::Integer;
+            else if (vector)
+                return HFunction::Vector_String;
+            else
+                return HFunction::String;
+        else if(tok.getType() == Token::h_char)
+            if (read&&vector)
+                return HFunction::Vector_Integer;
+            else if (read)
+                return HFunction::Integer;
+            else if (vector)
+                return HFunction::Vector_Char;
+            else
+                return HFunction::Char;
+        else if(tok.getType() == Token::h_int)
+            if (vector&&show)
+                return HFunction::Vector_String;
+            else if (show)
+                return HFunction::String;
+            else if (vector)
+                return HFunction::Vector_Integer;
+            else
+                return HFunction::Integer;
+        else if(tok.getType() == Token::h_float)
+            if (show && vector)
+                return HFunction::Vector_String;
+            else if (show)
+                return HFunction::String;
+            else if (vector)
+               return HFunction::Vector_Float;
+            else
+                return HFunction::Float;
+        else {
+            if(tok.getType() == Token::colon)
+                vector = true;
+            else if(tok.getType() == Token::plus_plus)
+                return HFunction::String;
+            else if(tok.getContents() == "read")
+                read = true;
+            else if(tok.getContents() == "show")
+                show = true;
+        }
+        return HFunction::Void;
+    }
 
-    } // TODO: Extract type from an arbitrary expression
+    static HFunction::Type getType(HExpression* he) {
+        auto current = he;
+        HFunction::Type ty = HFunction::Void;
+        HFunction::Type ty2;
+        stack<HExpression*> st;
+        bool read = false, show = false, vector = false;
+        while(current != nullptr && !st.empty()) {
+            st.push(current);
+            ty2 = test(current->data, read, show, vector);
+            if (ty2 != HFunction::Void)
+                ty = ty2;
+            current = current->left;
+            while (current == nullptr) {
+                current = st.top()->right;
+                st.pop();
+            }
+        }
+        return ty;
+    }
 
     bool expressionHelper(HExpression* &he) {
         Token t1 = t.next();
@@ -241,6 +320,7 @@ public:
                 return true;
             }
         } else return (primaryExpression(he));
+        return false;
     }
 
     bool primaryExpression(HExpression* &he) {
@@ -250,6 +330,7 @@ public:
                return functionCall(he);
            else {
                he = new HExpression(t.next()); // the next token is a variable name
+               return true;
            }
        } else {
             if (primary.getType() == Token::open_paren) {
@@ -267,6 +348,7 @@ public:
                 }
             } else {
                 he = new HExpression(t.next()); // the next token is a constant
+                return true;
             }
        }
     }

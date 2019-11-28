@@ -9,11 +9,10 @@
 using namespace std;
 
 class HExpression {
+public:
     HExpression* left;
     Token data;
     HExpression* right;
-
-public:
 
     explicit HExpression(Token _data = Token(), HExpression* _left = nullptr, HExpression* _right = nullptr) {
         data = std::move(_data);

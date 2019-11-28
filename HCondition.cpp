@@ -7,10 +7,18 @@
 
 using namespace std;
 
-struct HCondition {
-    HExpression *left = nullptr;
-    string op;
-    HExpression *right = nullptr;
+class HCondition {
+public:
+    HExpression *left;
+    string op = "";
+    HExpression *right;
+
+    HCondition() {
+       left = nullptr;
+       op = "";
+       right = nullptr;
+    }
+
     HCondition operator!() {
         HCondition hc;
         hc.left = left;

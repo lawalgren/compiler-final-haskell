@@ -58,6 +58,14 @@ public:
                     t = Token(Token::plus_plus, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"(([A-Za-z_]+).*)")))
                     t = Token(Token::name, sm[1]);
+                else if (regex_match(remaining, sm, regex(R"((\[[A-Za-z_,"]+\]).*)")))
+                    t = Token(Token::v_h_string, sm[1]);
+                else if (regex_match(remaining, sm, regex(R"((\[[A-Za-z_,']+\]).*)")))
+                    t = Token(Token::v_h_char, sm[1]);
+                else if (regex_match(remaining, sm, regex(R"((\[[0-9,]+\]).*)")))
+                    t = Token(Token::v_h_int, sm[1]);
+                else if (regex_match(remaining, sm, regex(R"((\[[0-9,\.Ee\+-]+\]).*)")))
+                    t = Token(Token::v_h_float, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((\+|-).*)")))
                     t = Token(Token::plus_minus, sm[1]);
                 else if (regex_match(remaining, sm, regex(R"((>=|<=|/=|==|>|<).*)")))
