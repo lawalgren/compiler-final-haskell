@@ -1,9 +1,8 @@
 //
 // Created by lucas on 11/20/19.
 //
-
+#pragma once
 #include <utility>
-
 #include "Token.cpp"
 
 using namespace std;

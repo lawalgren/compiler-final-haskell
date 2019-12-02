@@ -84,8 +84,8 @@ public:
            t.next();
            func.purity = false;
            auto a = commands();
-           func.commands = a.first;
-           func.where = a.second;
+           func.commands = get<0>(a);
+           func.where = get<1>(a);
        }
        else {
            func.logic = {};
@@ -105,39 +105,38 @@ public:
         t.next();
         pair<HExpression, HFunction::Type> exp = expression();
         pair<HLogical, HExpression> key = {hl, exp.first};
-        logic[key] = exp.second;
+        logic[hl] = make_tuple(exp.first, exp.second);
         guards(logic);
     }
 
-    void where(map<pair<string, HExpression>, HFunction::Type> &vars) {
+    void where(map<string, tuple<HExpression, HFunction::Type>> &vars) {
         if (t.peek().getContents() == "where")
             t.next();
         if (t.peek().getType() != Token::name)
             return;
         auto a = assignment();
-        vars[a.first] = a.second;
+        vars[get<0>(a)] = make_tuple(get<1>(a), get<2>(a));
         where(vars);
     }
 
-    pair<pair<string, HExpression>, HFunction::Type> assignment() {
+    tuple<string, HExpression, HFunction::Type> assignment() {
         string name = t.next().getContents();
         t.next();
         pair<HExpression, HFunction::Type> exp = expression();
-        pair<string, HExpression> key = {name, exp.first};
-        return {key, exp.second};
+        return make_tuple(name, exp.first, exp.second);
     }
 
-     void result(map<pair<HLogical, HExpression>, HFunction::Type> &logic) {
+     void result(map<HLogical, tuple<HExpression, HFunction::Type>> &logic) {
         if(t.peek().getContents() == "if")
             conditionalExp(logic);
         else {
             auto exp = expression();
             pair<HLogical, HExpression> key = {HLogical(), exp.first};
-            logic[key] = exp.second;
+            logic[HLogical()] = make_tuple(exp.first, exp.second);
         }
     }
 
-    void conditionalExp(map<pair<HLogical, HExpression>, HFunction::Type> &logic) {
+    void conditionalExp(map<HLogical, tuple<HExpression, HFunction::Type>> &logic) {
         if(t.peek().getContents() != "if") {
             cout << "error";
             return;
@@ -151,8 +150,8 @@ public:
         auto _else = expression();
         pair<HLogical, HExpression> key1 = {hc, then.first};
         pair<HLogical, HExpression> key2 = {!hc, _else.first};
-        logic[key1] = then.second;
-        logic[key2] = _else.second;
+        logic[hc] = make_tuple(then.first,then.second);
+        logic[!hc] = make_tuple(_else.first, _else.second);
     }
 
     void logical(HLogical &hl) {
@@ -388,15 +387,15 @@ public:
         return true;
     }
 
-    pair<vector<HExpression>,map<pair<string, HExpression>, HFunction::Type>> commands() {
+    pair<vector<HExpression>,map<string, tuple<HExpression, HFunction::Type>>> commands() {
         Token tok = t.peek();
         vector<HExpression> command_list;
-        map<pair<string, HExpression>, HFunction::Type> lets;
+        map<string, tuple<HExpression, HFunction::Type>> lets;
         while(tok.getType() != Token::end_of_function) {
             tok = t.next();
             if(tok.getContents() == "let") {
                 auto a = assignment();
-                lets[a.first] = a.second;
+                lets[get<0>(a)] = make_tuple(get<1>(a), get<2>(a));
             } else if (tok.getType() == Token::get_line) {
                 auto* nested = new HExpression(Token(Token::name, tok.getContents()));
                 HExpression he(Token(Token::get_line), nullptr, nested);
@@ -407,7 +406,7 @@ public:
                 command_list.emplace_back(*he);
             }
         }
-        pair<vector<HExpression>,map<pair<string, HExpression>, HFunction::Type>> ret = {command_list, lets};
+        pair<vector<HExpression>,map<string, tuple<HExpression, HFunction::Type>>> ret = {command_list, lets};
         return ret;
     }
 };
