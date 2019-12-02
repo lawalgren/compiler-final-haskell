@@ -1,8 +1,12 @@
+/*
+* Generator.cpp - Transpiler from Haskell98 to C++
+* 
+*/
 #include <iostream>
 #include <string>
 #include <fstream>
-#include "HFunction.cpp"
-#include "Parser.cpp"
+//#include "HFunction.cpp"
+//#include "Parser.cpp"
 using namespace std;
 ofstream outfile;
 string FILE_NAME = "transpiled.cpp";
@@ -10,10 +14,14 @@ string FILE_NAME = "transpiled.cpp";
 
 void preamble() {
     outfile.open(FILE_NAME);
+    if(!outfile.is_open())  cout << "Error Opening output file." << endl;
     outfile << "#include <iostream>" << endl<< "#include <vector>"<< endl 
     << "#include <string>" << endl << "using namespace std;" << endl;
 }
 
+void function() {
+
+}
 
 
 void postamble() {
@@ -22,8 +30,9 @@ void postamble() {
 }
 
 int main() {
-    preamble;
-
-    postamble;
+    preamble();
+    //vector<HFunction> funcs;
+    cout << "Hello";
+    postamble();
     return 0;
 }
