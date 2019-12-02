@@ -7,8 +7,34 @@
 
 using namespace std;
 
-struct HCondition {
+class HCondition {
+public:
     HExpression *left;
-    string op;
+    string op = "";
     HExpression *right;
+
+    HCondition() {
+       left = nullptr;
+       op = "";
+       right = nullptr;
+    }
+
+    HCondition operator!() {
+        HCondition hc;
+        hc.left = left;
+        hc.right = right;
+        if (op == ">")
+            hc.op = "<=";
+        else if (op == "<")
+            hc.op = ">=";
+        else if (op == "==")
+            hc.op = "/=";
+        else if (op == "/=")
+            hc.op = "==";
+        else if (op == ">=")
+            hc.op = "<";
+        else if (op == "<=")
+            hc.op = ">";
+        return hc;
+    }
 };

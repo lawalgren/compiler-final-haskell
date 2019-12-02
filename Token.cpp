@@ -11,8 +11,10 @@ class Token {
     public:
         typedef enum _TokenTypes {
             keyword,
+            datatype,
             name,
-            infix_op,
+            get_line,
+            type_decorator,
             multiplicative_op,
             plus_minus,
             conditional_op,
@@ -26,12 +28,18 @@ class Token {
             open_paren,
             close_paren,
             h_char,
+            v_h_char,
             h_string,
+            v_h_string,
             h_int,
+            v_h_int,
             h_float,
+            v_h_float,
             newline,
             whitechar,
             eof,
+            end_of_function,
+            function_call_continue,
             none
         } Type;
 

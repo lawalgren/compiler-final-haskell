@@ -6,8 +6,20 @@
 #include <string>
 using namespace std;
 
-class HLogical {
-    HCondition *left;
+struct HLogical {
+    HCondition *left = nullptr;
     string op;
-    HCondition *right;
+    HCondition *right = nullptr;
 };
+
+HLogical operator!(HLogical &hl) {
+    HLogical _hl;
+    (*_hl.left) = !(*hl.left);
+    (*_hl.right) = !(*hl.right);
+    _hl.op = "";
+    if(hl.op == "&&")
+        _hl.op = "||";
+    else if (hl.op == "||")
+        _hl.op = "&&";
+    return _hl;
+}
