@@ -96,7 +96,7 @@ public:
        return func;
     }
 
-    void guards(map<pair<HLogical, HExpression>, HFunction::Type> &logic) {
+    void guards(map<HLogical, tuple<HExpression, HFunction::Type>> &logic) {
         if (t.peek().getType() != Token::vertical_bar)
             return;
         t.next();

@@ -15,8 +15,8 @@ struct HFunction{
         Integer, Float, String, Char, Vector_Integer, Vector_Float, Vector_Char, Vector_String, Void
     } Type;
     string name;
-    map<tuple<HLogical>, HExpression, Type> logic; // map condition to returned value
-    map<tuple<string>, HExpression, Type> where; // map variable name to value
+    map<HLogical, tuple<HExpression, Type>> logic; // map condition to returned value
+    map<string, tuple<HExpression, Type>> where; // map variable name to value
     map<string, Type> params; // list of parameters to the function
     bool purity;
     Type return_type;
