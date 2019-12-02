@@ -375,7 +375,7 @@ public:
         Token token = t.peek();
         vector<string> param_list;
         while(token.getContents() != "=" && token.getContents() != "|")
-            param_list.emplace_back(t.next());
+            param_list.emplace_back(t.next().getContents());
         return param_list;
     }
 
