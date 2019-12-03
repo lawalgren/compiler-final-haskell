@@ -28,6 +28,7 @@ class Token {
             open_paren,
             close_paren,
             h_char,
+            v_empty,
             v_h_char,
             h_string,
             v_h_string,
@@ -44,15 +45,15 @@ class Token {
         } Type;
 
     private:
-        Type type;
+        Type _type;
         string contents;;
 
     public:
-        explicit Token(Type _type=none, string _contents="") {
-           type = _type;
+        explicit Token(Type __type=none, string _contents="") {
+           _type = __type;
            contents = std::move(_contents);
         }
 
-        Type getType() { return type; }
+        Type getType() { return _type; }
         string getContents() { return contents; }
 };

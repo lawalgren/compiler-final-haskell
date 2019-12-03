@@ -18,7 +18,15 @@ struct HFunction{
     map<HLogical, tuple<HExpression, Type>> logic; // map condition to returned value
     map<string, tuple<HExpression, Type>> where; // map variable name to value
     map<string, Type> params; // list of parameters to the function
+    vector<HLogical> logic_order;
+    vector<string> where_order;
+    vector<string> params_order;
     bool purity;
     Type return_type;
     vector<HExpression> commands;
+
 };
+
+inline bool operator==(const HFunction &h1, const HFunction &h2) {
+    return(h1.name == h2.name);
+}

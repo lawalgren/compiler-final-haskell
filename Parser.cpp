@@ -9,20 +9,21 @@
 #include <vector>
 #include <regex>
 #include <algorithm>
+#include <sstream>
 #include <stack>
 
 using namespace std;
 
 class Parser {
+public:
     vector<HFunction> functions_list;
     vector<string> function_table;
     Tokenizer t;
     string error = "";
-public:
     explicit Parser(string program) : t(move(program)) {
         while(t.peek().getType() != Token::eof)
            functions_list.emplace_back(function());
-        if(error != "")
+        if(!error.empty())
             cout << error << endl;
     }
 
@@ -31,72 +32,99 @@ public:
        func.purity = true;
 
        // get function param types and return type
-       string type = t.next().getContents();
-       smatch sm;
-       regex_match(type, sm, regex(R"(^[ ] \:\: ([A-Za-z\[\]]+->)+([A-Za-z\[\]))"));
-       string return_type = sm[sm.length() - 1];
-       vector <string> param_returns = {};
-       for (long i = 1; i < sm.length() - 1; i++) {
-          param_returns.emplace_back(sm[i]);
+        vector<string> param_returns = {};
+        if(t.peek().getType() == Token::type_decorator) {
+           string type = t.next().getContents();
+           istringstream ss(type);
+           string temp;
+           vector<string> tempvec;
+           while (ss >> temp) {
+               if (temp != "->" && temp != "::")
+                   tempvec.emplace_back(temp);
+           }
+           t.next(); // remove eof token after type decorator
+           string return_type = tempvec[tempvec.size() - 1];
+           func.return_type = strToType(return_type);
+           for (long i = 1; i < tempvec.size() - 1; i++) {
+               param_returns.emplace_back(tempvec[i]);
+           }
        }
 
        // get function name
-       func.name = t.next().getContents();
-       function_table.emplace_back(func.name);
+       Token nam = t.next();
+       func.name = nam.getContents();
 
        // get function parameters and map them to their type
-       vector<string> param_vector = params();
-       map<string, HFunction::Type> param_map;
-       for (unsigned long i = 0; i < param_vector.size(); i++) {
-           string _type = param_returns[i];
-           HFunction::Type h_type;
+        vector<string> param_vector = params();
+        map<string, HFunction::Type> param_map;
+        if (find(function_table.begin(), function_table.end(), func.name) != function_table.end()) {
+            auto it = find(functions_list.begin(), functions_list.end(), func);
+            unsigned long i = 0;
+            for (auto & param : it->params_order) {
+                //TODO: Test this
+                param_map[param_vector[i]] = it->params[param];
+                func.params_order.emplace_back(param_vector[i]);
+                i++;
+            }
+            func.return_type = it->return_type;
+        } else {
+            for (unsigned long i = 0; i < param_vector.size(); i++) {
+                string _type = param_returns[i];
+                HFunction::Type h_type = strToType(_type);
+                param_map[param_vector[i]] = h_type;
+                func.params_order.emplace_back(param_vector[i]);
+            }
+        }
+        func.params = param_map;
 
-           if (_type == "Int")
-               h_type = HFunction::Integer;
-           else if (_type == "String")
-               h_type = HFunction::String;
-           else if (_type == "Char")
-               h_type = HFunction::Char;
-           else if (_type == "Float")
-               h_type = HFunction::Float;
-           else if (_type == "[Int]")
-               h_type = HFunction::Vector_Integer;
-           else if (_type == "[String]")
-               h_type = HFunction::Vector_String;
-           else if (_type == "[Char]")
-               h_type = HFunction::Vector_Char;
-           else if (_type == "[Float]")
-               h_type = HFunction::Vector_Float;
-           else
-               h_type = HFunction::Void;
-
-          param_map[param_vector[i]] = h_type;
-       }
-       func.params = param_map;
-
-       if (t.peek().getType() == Token::vertical_bar) {
+        if (t.peek().getType() == Token::vertical_bar) {
            func.logic = {};
-           guards(func.logic);
+           guards(func.logic, func);
            func.where = {};
-           where(func.where);
-       }
-       else if (t.peek().getContents() == "do") {
+           where(func.where, func);
+       } else if (t.peek().getContents() == "do") {
            t.next();
            func.purity = false;
-           auto a = commands();
+           auto a = commands(func);
            func.commands = get<0>(a);
            func.where = get<1>(a);
-       }
-       else {
+       } else {
+           t.next();
            func.logic = {};
-           result(func.logic);
+           result(func.logic, func);
            func.where = {};
-           where(func.where);
+           where(func.where, func);
        }
+       function_table.emplace_back(func.name);
+       if(t.peek().getType() == Token::end_of_function)
+            t.next();
        return func;
     }
 
-    void guards(map<HLogical, tuple<HExpression, HFunction::Type>> &logic) {
+    HFunction::Type strToType(string _type) {
+        HFunction::Type h_type;
+        if (_type == "Int")
+            h_type = HFunction::Integer;
+        else if (_type == "String")
+            h_type = HFunction::String;
+        else if (_type == "Char")
+            h_type = HFunction::Char;
+        else if (_type == "Float")
+            h_type = HFunction::Float;
+        else if (_type == "[Int]")
+            h_type = HFunction::Vector_Integer;
+        else if (_type == "[String]")
+            h_type = HFunction::Vector_String;
+        else if (_type == "[Char]")
+            h_type = HFunction::Vector_Char;
+        else if (_type == "[Float]")
+            h_type = HFunction::Vector_Float;
+        else
+            h_type = HFunction::Void;
+        return h_type;
+    }
+
+    void guards(map<HLogical, tuple<HExpression, HFunction::Type>> &logic, HFunction &func) {
         if (t.peek().getType() != Token::vertical_bar)
             return;
         t.next();
@@ -106,17 +134,19 @@ public:
         pair<HExpression, HFunction::Type> exp = expression();
         pair<HLogical, HExpression> key = {hl, exp.first};
         logic[hl] = make_tuple(exp.first, exp.second);
-        guards(logic);
+        func.logic_order.emplace_back(hl);
+        guards(logic, func);
     }
 
-    void where(map<string, tuple<HExpression, HFunction::Type>> &vars) {
+    void where(map<string, tuple<HExpression, HFunction::Type>> &vars, HFunction &func) {
         if (t.peek().getContents() == "where")
             t.next();
         if (t.peek().getType() != Token::name)
             return;
         auto a = assignment();
         vars[get<0>(a)] = make_tuple(get<1>(a), get<2>(a));
-        where(vars);
+        func.where_order.emplace_back(get<0>(a));
+        where(vars, func);
     }
 
     tuple<string, HExpression, HFunction::Type> assignment() {
@@ -126,13 +156,14 @@ public:
         return make_tuple(name, exp.first, exp.second);
     }
 
-     void result(map<HLogical, tuple<HExpression, HFunction::Type>> &logic) {
-        if(t.peek().getContents() == "if")
+     void result(map<HLogical, tuple<HExpression, HFunction::Type>> &logic, HFunction &func) {
+        if(t.peek().getContents() == "if") {
             conditionalExp(logic);
-        else {
+        } else {
             auto exp = expression();
             pair<HLogical, HExpression> key = {HLogical(), exp.first};
             logic[HLogical()] = make_tuple(exp.first, exp.second);
+            func.logic_order.emplace_back(HLogical());
         }
     }
 
@@ -245,26 +276,27 @@ public:
         HFunction::Type ty2;
         stack<HExpression*> st;
         bool read = false, show = false, vector = false;
-        while(current != nullptr && !st.empty()) {
+        while(current != nullptr || !st.empty()) {
+            while (current == nullptr && !st.empty()) {
+                current = st.top()->right;
+                st.pop();
+            }
+            if (current == nullptr)
+                break;
             st.push(current);
             ty2 = test(current->data, read, show, vector);
             if (ty2 != HFunction::Void)
                 ty = ty2;
             current = current->left;
-            while (current == nullptr) {
-                current = st.top()->right;
-                st.pop();
-            }
         }
         return ty;
     }
 
     bool expressionHelper(HExpression* &he) {
-        Token t1 = t.next();
         auto* sub = new HExpression();
         HExpression* left = nullptr;
         Token last, next;
-        while (term(he)) {
+        while (term(sub)) {
             if (t.peek().getType() != Token::plus_minus || t.peek().getType() != Token::plus_plus || t.peek().getType() != Token::colon)
                 break;
             else {
@@ -285,11 +317,10 @@ public:
     }
 
     bool term(HExpression* &he) {
-        Token t1 = t.next();
         auto* sub = new HExpression();
         HExpression* left = nullptr;
         Token last, next;
-        while (unaryExpression(he)) {
+        while (unaryExpression(sub)) {
             if (t.peek().getType() != Token::multiplicative_op)
                 break;
             else {
@@ -373,8 +404,11 @@ public:
     vector<string> params() {
         Token token = t.peek();
         vector<string> param_list;
-        while(token.getContents() != "=" && token.getContents() != "|")
-            param_list.emplace_back(t.next().getContents());
+        while(token.getType() != Token::equals && token.getType() != Token::vertical_bar) {
+            t.next();
+            param_list.emplace_back(token.getContents());
+            token = t.peek();
+        }
         return param_list;
     }
 
@@ -387,7 +421,7 @@ public:
         return true;
     }
 
-    pair<vector<HExpression>,map<string, tuple<HExpression, HFunction::Type>>> commands() {
+    pair<vector<HExpression>,map<string, tuple<HExpression, HFunction::Type>>> commands(HFunction &func) {
         Token tok = t.peek();
         vector<HExpression> command_list;
         map<string, tuple<HExpression, HFunction::Type>> lets;
@@ -396,6 +430,7 @@ public:
             if(tok.getContents() == "let") {
                 auto a = assignment();
                 lets[get<0>(a)] = make_tuple(get<1>(a), get<2>(a));
+                func.where_order.emplace_back(get<0>(a));
             } else if (tok.getType() == Token::get_line) {
                 auto* nested = new HExpression(Token(Token::name, tok.getContents()));
                 HExpression he(Token(Token::get_line), nullptr, nested);

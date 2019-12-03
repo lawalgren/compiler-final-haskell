@@ -21,8 +21,10 @@ public:
 
 inline HLogical operator!(const HLogical &hl) {
     HLogical _hl;
-    (*_hl.left) = !(*hl.left);
-    (*_hl.right) = !(*hl.right);
+    if (hl.left != nullptr)
+        _hl.left = new HCondition(!(*hl.left));
+    if (hl.right != nullptr)
+        _hl.right = new HCondition(!(*hl.right));
     _hl.op = "";
     if(hl.op == "&&")
         _hl.op = "||";
