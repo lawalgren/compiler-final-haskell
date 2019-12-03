@@ -1,18 +1,25 @@
 //
 // Created by lucas on 11/20/19.
 //
-
+#pragma once
 #include "HCondition.cpp"
 #include <string>
 using namespace std;
 
-struct HLogical {
-    HCondition *left = nullptr;
+class HLogical {
+public:
+    HCondition *left;
     string op;
-    HCondition *right = nullptr;
+    HCondition *right;
+
+    HLogical() {
+        left = nullptr;
+        op = "";
+        right = nullptr;
+    }
 };
 
-HLogical operator!(HLogical &hl) {
+inline HLogical operator!(const HLogical &hl) {
     HLogical _hl;
     (*_hl.left) = !(*hl.left);
     (*_hl.right) = !(*hl.right);
@@ -22,4 +29,8 @@ HLogical operator!(HLogical &hl) {
     else if (hl.op == "||")
         _hl.op = "&&";
     return _hl;
+}
+
+inline bool operator<(const HLogical &c, const HLogical &d) {
+    return (d.op.length() > c.op.length());
 }

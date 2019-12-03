@@ -10,7 +10,7 @@ using namespace std;
 class HCondition {
 public:
     HExpression *left;
-    string op = "";
+    string op;
     HExpression *right;
 
     HCondition() {
@@ -18,23 +18,27 @@ public:
        op = "";
        right = nullptr;
     }
-
-    HCondition operator!() {
-        HCondition hc;
-        hc.left = left;
-        hc.right = right;
-        if (op == ">")
-            hc.op = "<=";
-        else if (op == "<")
-            hc.op = ">=";
-        else if (op == "==")
-            hc.op = "/=";
-        else if (op == "/=")
-            hc.op = "==";
-        else if (op == ">=")
-            hc.op = "<";
-        else if (op == "<=")
-            hc.op = ">";
-        return hc;
-    }
 };
+
+inline HCondition operator!(const HCondition &og) {
+    HCondition hc;
+    hc.left = og.left;
+    hc.right = og.right;
+    if (og.op == ">")
+        hc.op = "<=";
+    else if (og.op == "<")
+        hc.op = ">=";
+    else if (og.op == "==")
+        hc.op = "/=";
+    else if (og.op == "/=")
+        hc.op = "==";
+    else if (og.op == ">=")
+        hc.op = "<";
+    else if (og.op == "<=")
+        hc.op = ">";
+    return hc;
+}
+
+inline bool operator<(const HCondition &c, const HCondition &d) {
+    return(d.op.length() > c.op.length());
+}

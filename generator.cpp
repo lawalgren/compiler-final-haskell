@@ -1,7 +1,11 @@
+<<<<<<< HEAD
 /*
 * Generator.cpp - Transpiler from Haskell98 to C++
 * 
 */
+=======
+#pragma once
+>>>>>>> fa2176e83e0d396889a889d0cd0552a14bc3a8e9
 #include <iostream>
 #include <string>
 #include <fstream>
