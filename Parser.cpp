@@ -26,7 +26,8 @@ public:
         if(!error.empty())
             cout << error << endl;
     }
-
+    // <functionName> <params> = <result> <where> | <functionName> = do <commands>
+    // | <functionName> <params> <guards> <where>
     HFunction function() {
        HFunction func;
        func.purity = true;
@@ -101,7 +102,7 @@ public:
        return func;
     }
 
-    HFunction::Type strToType(string _type) {
+    static HFunction::Type strToType(const string& _type) {
         HFunction::Type h_type;
         if (_type == "Int")
             h_type = HFunction::Integer;
@@ -124,13 +125,13 @@ public:
         return h_type;
     }
 
-    void guards(map<HLogical, tuple<HExpression, HFunction::Type>> &logic, HFunction &func) {
+    void guards(map<HLogical, tuple<HExpression, HFunction::Type>> &logic, HFunction &func) { // | <logical> = <expresssion>
         if (t.peek().getType() != Token::vertical_bar)
             return;
         t.next();
         HLogical hl;
         logical(hl);
-        t.next();
+        t.next(); //eat = sign
         pair<HExpression, HFunction::Type> exp = expression();
         pair<HLogical, HExpression> key = {hl, exp.first};
         logic[hl] = make_tuple(exp.first, exp.second);
@@ -138,7 +139,7 @@ public:
         guards(logic, func);
     }
 
-    void where(map<string, tuple<HExpression, HFunction::Type>> &vars, HFunction &func) {
+    void where(map<string, tuple<HExpression, HFunction::Type>> &vars, HFunction &func) { // where <assignment>
         if (t.peek().getContents() == "where")
             t.next();
         if (t.peek().getType() != Token::name)
@@ -149,14 +150,14 @@ public:
         where(vars, func);
     }
 
-    tuple<string, HExpression, HFunction::Type> assignment() {
+    tuple<string, HExpression, HFunction::Type> assignment() { // <variable> = <expression>
         string name = t.next().getContents();
-        t.next();
+        t.next(); //eat = sign
         pair<HExpression, HFunction::Type> exp = expression();
         return make_tuple(name, exp.first, exp.second);
     }
 
-     void result(map<HLogical, tuple<HExpression, HFunction::Type>> &logic, HFunction &func) {
+     void result(map<HLogical, tuple<HExpression, HFunction::Type>> &logic, HFunction &func) { // <conditionalExp> | <expression>
         if(t.peek().getContents() == "if") {
             conditionalExp(logic);
         } else {
@@ -167,7 +168,7 @@ public:
         }
     }
 
-    void conditionalExp(map<HLogical, tuple<HExpression, HFunction::Type>> &logic) {
+    void conditionalExp(map<HLogical, tuple<HExpression, HFunction::Type>> &logic) { // if <logical> then <expression> else <expression>
         if(t.peek().getContents() != "if") {
             cout << "error";
             return;
@@ -185,7 +186,7 @@ public:
         logic[!hc] = make_tuple(_else.first, _else.second);
     }
 
-    void logical(HLogical &hl) {
+    void logical(HLogical &hl) { // <conditional> <logical_op> <conditional>
         auto *hc = new HCondition();
         auto *hc2 = new HCondition();
         conditional(hc);
@@ -196,7 +197,7 @@ public:
         hl.op = op;
     }
 
-    void conditional(HCondition* &hc) {
+    void conditional(HCondition* &hc) { // <expression> <conditional_op> <expression>
         auto exp1 = expression();
         string op = t.next().getContents();
         auto exp2 = expression();
@@ -205,14 +206,14 @@ public:
         hc->op = op;
     }
 
-    pair<HExpression, HFunction::Type> expression() {
+    pair<HExpression, HFunction::Type> expression() { //gets an abstract syntax tree for each each expression
         auto *he = new HExpression();
         expressionHelper(he);
         pair<HExpression, HFunction::Type> ret = {*he,getType(he)};
         return ret;
     }
 
-    static HFunction::Type test(Token tok, bool &read, bool &show, bool &vector) {
+    static HFunction::Type test(Token tok, bool &read, bool &show, bool &vector) { //checks for constants to determine expression type
         if(tok.getType() == Token::v_h_string)
             return HFunction::Vector_String;
         else if(tok.getType() == Token::v_h_char)
@@ -270,7 +271,7 @@ public:
         return HFunction::Void;
     }
 
-    static HFunction::Type getType(HExpression* he) {
+    static HFunction::Type getType(HExpression* he) { // iterates over expression tree and attempts to determine type
         auto current = he;
         HFunction::Type ty = HFunction::Void;
         HFunction::Type ty2;
@@ -292,7 +293,7 @@ public:
         return ty;
     }
 
-    bool expressionHelper(HExpression* &he) {
+    bool expressionHelper(HExpression* &he) { // <expression> <additive_op> <term>
         auto* sub = new HExpression();
         HExpression* left = nullptr;
         Token last, next;
@@ -316,7 +317,7 @@ public:
         return true;
     }
 
-    bool term(HExpression* &he) {
+    bool term(HExpression* &he) { // <term> <multiplicative_op> <unary_expression>
         auto* sub = new HExpression();
         HExpression* left = nullptr;
         Token last, next;
@@ -340,7 +341,7 @@ public:
         return true;
     }
 
-    bool unaryExpression(HExpression* &he) {
+    bool unaryExpression(HExpression* &he) { // <plus_minus> <unary_expression> | <primary_expression>
         Token operation = t.peek();
         if (operation.getType() == Token::plus_minus) {
             auto* sub = new HExpression();
@@ -353,7 +354,7 @@ public:
         return false;
     }
 
-    bool primaryExpression(HExpression* &he) {
+    bool primaryExpression(HExpression* &he) { // <functionCall> | <variable> | (<expression>) | <constant>
        Token primary = t.peek();
        if (primary.getType() == Token::name) {
            if (find(function_table.begin(), function_table.end(), primary.getContents()) != function_table.end())
@@ -383,9 +384,9 @@ public:
        }
     }
 
-    bool paramTree(HExpression* &he) {
+    bool paramTree(HExpression* &he) { // <param> <paramTree> | <epsilon>
         auto *sub = new HExpression();
-        HExpression *left = nullptr;
+        HExpression *left  = nullptr;
         while (primaryExpression(sub)) {
             if (t.peek().getType() == Token::end_of_function || t.peek().getType() == Token::close_paren)
                 return false;
@@ -401,7 +402,7 @@ public:
         return true;
     }
 
-    vector<string> params() {
+    vector<string> params() { // <param> <params>
         Token token = t.peek();
         vector<string> param_list;
         while(token.getType() != Token::equals && token.getType() != Token::vertical_bar) {
@@ -412,7 +413,7 @@ public:
         return param_list;
     }
 
-    bool functionCall(HExpression* &he) {
+    bool functionCall(HExpression* &he) { // <functionName> <paramTree>
         Token name = t.next();
         he = new HExpression(name);
         auto* sub = new HExpression();
@@ -421,6 +422,7 @@ public:
         return true;
     }
 
+    // let <assignment> <commands> | <variable> <- getLine <commands> | <functionCall> <commands> | <epsilon>
     pair<vector<HExpression>,map<string, tuple<HExpression, HFunction::Type>>> commands(HFunction &func) {
         Token tok = t.peek();
         vector<HExpression> command_list;
