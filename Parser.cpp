@@ -16,11 +16,13 @@ using namespace std;
 
 class Parser {
 public:
+    vector<Token::Type> constants_types = {Token::h_string, Token::h_int, Token::h_char, Token::h_float, Token::v_empty, Token::v_h_string, Token::v_h_char, Token::v_h_char, Token::v_h_int, Token::v_h_float};
+    vector<string> built_ins = {"getLine", "words", "unlines", "read", "show", "putStrLine"};
     vector<HFunction> functions_list;
     vector<string> function_table;
     Tokenizer t;
     string error = "";
-    explicit Parser(string program) : t(move(program)) {
+    explicit Parser(string program) : t(program) {
         while(t.peek().getType() != Token::eof)
            functions_list.emplace_back(function());
         if(!error.empty())
@@ -62,7 +64,6 @@ public:
             auto it = find(functions_list.begin(), functions_list.end(), func);
             unsigned long i = 0;
             for (auto & param : it->params_order) {
-                //TODO: Test this
                 param_map[param_vector[i]] = it->params[param];
                 func.params_order.emplace_back(param_vector[i]);
                 i++;
@@ -83,18 +84,21 @@ public:
            guards(func.logic, func);
            func.where = {};
            where(func.where, func);
-       } else if (t.peek().getContents() == "do") {
-           t.next();
-           func.purity = false;
-           auto a = commands(func);
-           func.commands = get<0>(a);
-           func.where = get<1>(a);
-       } else {
-           t.next();
-           func.logic = {};
-           result(func.logic, func);
-           func.where = {};
-           where(func.where, func);
+       } else if (t.peek().getContents() == "=") {
+            t.next();
+            if(t.peek().getContents() == "do") {
+                func.purity = false;
+                auto a = commands(func);
+                func.commands = get<0>(a);
+                func.where = get<1>(a);
+                t.next();
+            }
+            else {
+                func.logic = {};
+                result(func.logic, func);
+                func.where = {};
+                where(func.where, func);
+            }
        }
        function_table.emplace_back(func.name);
        if(t.peek().getType() == Token::end_of_function)
@@ -298,7 +302,8 @@ public:
         HExpression* left = nullptr;
         Token last, next;
         while (term(sub)) {
-            if (t.peek().getType() != Token::plus_minus || t.peek().getType() != Token::plus_plus || t.peek().getType() != Token::colon)
+            Token help = t.peek();
+            if (t.peek().getType() != Token::plus_minus && t.peek().getType() != Token::plus_plus && t.peek().getType() != Token::colon)
                 break;
             else {
                 next = t.next();
@@ -356,8 +361,8 @@ public:
 
     bool primaryExpression(HExpression* &he) { // <functionCall> | <variable> | (<expression>) | <constant>
        Token primary = t.peek();
-       if (primary.getType() == Token::name) {
-           if (find(function_table.begin(), function_table.end(), primary.getContents()) != function_table.end())
+       if (primary.getType() == Token::name || primary.getType() == Token::keyword) {
+           if (find(function_table.begin(), function_table.end(), primary.getContents()) != function_table.end() || primary.getType() == Token::keyword)
                return functionCall(he);
            else {
                he = new HExpression(t.next()); // the next token is a variable name
@@ -367,7 +372,7 @@ public:
             if (primary.getType() == Token::open_paren) {
                 t.next(); // eliminate open paren
                 auto* sub = new HExpression();
-                if (expressionHelper(he)) {
+                if (expressionHelper(sub)) {
                     he = new HExpression(sub);
                     if (t.next().getType() != Token::close_paren) {
                         error = "Error: Mismatched (";
@@ -377,28 +382,32 @@ public:
                     error = "Error: Expected expression within ()";
                     return false;
                 }
-            } else {
+            } else if(find(constants_types.begin(), constants_types.end(), primary.getType()) != constants_types.end()) {
                 he = new HExpression(t.next()); // the next token is a constant
                 return true;
             }
+            else return false;
        }
     }
 
-    bool paramTree(HExpression* &he) { // <param> <paramTree> | <epsilon>
+    bool paramTree(HExpression* &he, int paramsProcessed, string name) { // <param> <paramTree> | <epsilon>
         auto *sub = new HExpression();
         HExpression *left  = nullptr;
-        while (primaryExpression(sub)) {
-            if (t.peek().getType() == Token::end_of_function || t.peek().getType() == Token::close_paren)
-                return false;
-            if (left != nullptr)
-                left = new HExpression(Token(Token::function_call_continue), left, sub);
-            else
-                left = new HExpression(sub);
-        }
-        if (left != nullptr)
-            he = new HExpression(Token(Token::function_call_continue), left, sub);
+        HFunction hf;
+        hf.name = name;
+        Token last;
+        int numParams;
+        auto it = find(functions_list.begin(), functions_list.end(), hf);
+        if (it == functions_list.end())
+           numParams = 1;
         else
-            he = new HExpression(sub);
+            numParams = it->params_order.size();
+        while (paramsProcessed < numParams && paramTree(sub, paramsProcessed + 1, name)) {
+                auto* sub2 = new HExpression();
+                primaryExpression(sub2);
+                he = new HExpression(Token(Token::function_call_continue, ""), sub2, sub);
+                return true;
+            }
         return true;
     }
 
@@ -417,7 +426,7 @@ public:
         Token name = t.next();
         he = new HExpression(name);
         auto* sub = new HExpression();
-        paramTree(sub);
+        paramTree(sub, 0, name.getContents());
         he = new HExpression(name, nullptr, sub);
         return true;
     }
@@ -427,7 +436,7 @@ public:
         Token tok = t.peek();
         vector<HExpression> command_list;
         map<string, tuple<HExpression, HFunction::Type>> lets;
-        while(tok.getType() != Token::end_of_function) {
+        while(tok.getType() != Token::end_of_function && tok.getType() != Token::eof) {
             tok = t.next();
             if(tok.getContents() == "let") {
                 auto a = assignment();

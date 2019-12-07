@@ -16,7 +16,7 @@ class Tokenizer {
 public:
 	explicit Tokenizer(string line) {
 		string token, remaining = std::move(line), error;
-		bool fresh_newline = false;
+        bool fresh_newline = false;
 		smatch sm;
 
 		while (!remaining.empty()) {
@@ -28,10 +28,14 @@ public:
 		        while(!remaining.empty() && remaining.substr(0,2) != "-}")
 		            remaining = remaining.substr(1);
 		    }
-		    if(!tokens.empty() && tokens[tokens.size() - 1].getType() != Token::newline && remaining[0] == ' ') { // eat non-indenting spaces
+		    if(!tokens.empty() && !fresh_newline && remaining[0] == ' ') { // eat non-indenting spaces
 		        while(remaining[0] == ' ')
 		            remaining = remaining.substr(1);
 		    }
+            if (fresh_newline && remaining[0] != ' ') {
+                tokens.emplace_back(Token(Token::end_of_function, ""));
+                fresh_newline = false;
+            }
 		    else {
                 Token t;
                 if (regex_match(remaining, sm, regex("([^\n]+::.*)[\\S\\s]*"))) //match type decorators
@@ -40,7 +44,7 @@ public:
                     t = Token(Token::keyword, sm[1]);
                 else if (regex_match(remaining, sm, regex("(Int|String|Char|Float|\\[Int\\]|\\[String\\]|\\[Char\\]|\\[Float\\])[\\S\\s]*")))
                     t = Token(Token::datatype, sm[1]);
-                else if (regex_match(remaining, sm, regex("([A-Za-z\\_]+ *-> *getLine)[\\S\\s]*"))) {
+                else if (regex_match(remaining, sm, regex("([A-Za-z\\_]+ *<- *getLine)[\\S\\s]*"))) {
                     string step1 = sm[1].str();
                     smatch sm1;
                     regex_match(step1, sm1, regex("([A-Za-z\\_]+)[\\S\\s]*"));
@@ -89,7 +93,7 @@ public:
                 else if (regex_match(remaining, sm, regex("(\\))[\\S\\s]*")))
                     t = Token(Token::close_paren, sm[1]);
                 else if (regex_match(remaining, sm, regex("( +)[\\S\\s]*")))
-                    t = Token(Token::whitechar, sm[1]);
+                    fresh_newline = false;
                 else if (regex_match(remaining, sm, regex("([\r\n]+)[\\S\\s]*"))) {
                     //t = Token(Token::newline, sm[1]);
                     fresh_newline = true;
@@ -106,12 +110,7 @@ public:
                 remaining = remaining.substr(sm[1].length());
                 if (t.getType() != Token::none)
                     tokens.emplace_back(t);
-                if (fresh_newline && t.getType() == Token::whitechar)
-                    fresh_newline = false;
-                else if (fresh_newline) {
-                    tokens.emplace_back(Token(Token::end_of_function, ""));
-                    fresh_newline = false;
-                }
+
             }
 		}
 		if (error.empty()) it = tokens.begin();
