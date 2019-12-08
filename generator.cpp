@@ -38,7 +38,7 @@ Parser getParser() {
 }
 
 void postamble() {
-    outfile << "return 0;" << endl << "}" << endl;
+    outfile << "\treturn 0;" << endl << "}" << endl;
     outfile.close();
 }
 
@@ -52,7 +52,7 @@ int main() {
     Parser p = getParser();
     //Output function declaration
     for(auto func : p.functions_list ) {
-        switch (func.return_type){
+        switch (func.return_type) {
             case HFunction::Integer :
                 outfile << "int";
             break;
@@ -81,6 +81,7 @@ int main() {
                 outfile << "void";
             break;
         }
+        string patternArr[2];
         outfile << " " << func.name << "(";
         int counter = 0;
         for (auto param : func.params_order) {
@@ -113,7 +114,28 @@ int main() {
                 outfile << "vector<string>";
                 break;
             }
-            outfile << " " << param;
+            if(param == "[]")
+                outfile << " " << "empty";
+            
+            else if(param[0] == '(') {
+                outfile << " " << "pattern";
+                bool colon = false;
+                string one = "", two = "";
+                for(auto ch: param) {
+                    if(ch == ':') colon = true;
+                    if(ch != '(' && ch != ')' && ch != ':') {
+                        if(!colon) {
+                            one += ch;
+                        } 
+                        else 
+                            two += ch;
+                    }
+                }
+                patternArr[0] = one;
+                patternArr[1] = two;
+            }
+            else
+                outfile << " " << param;
             if (counter != func.params_order.size() - 1)
                 outfile << ", ";
             
@@ -122,6 +144,11 @@ int main() {
         outfile << ") {\n";
         //End function Declaration
 
+        if(patternArr[0] != "") {
+            outfile << "\tstring " << patternArr[0] << " = pattern[0];\n";
+            outfile << "\tvector<string> " << patternArr[1] << " = pattern.erase(pattern.begin(), pattern.begin()+1);\n"; 
+        }
+
         for (auto var : func.where_order) {
             auto rpart = func.where.at(var);
                 auto current = &get<0>(rpart);
@@ -129,31 +156,31 @@ int main() {
                 auto type = get<1>(rpart);
                 switch (type){
                     case HFunction::Integer :
-                        outfile << "int";
+                        outfile << "\tint";
                         break;
                     case HFunction::Float :
-                        outfile << "float";
+                        outfile << "\tfloat";
                         break;
                     case HFunction::String :
-                        outfile << "string";
+                        outfile << "\tstring";
                         break;
                     case HFunction::Char :
-                        outfile << "char";
+                        outfile << "\tchar";
                         break;
                     case HFunction::Vector_Integer :
-                        outfile << "vector<int>";
+                        outfile << "\tvector<int>";
                         break;
                     case HFunction::Vector_Float :
-                        outfile << "vector<float>";
+                        outfile << "\tvector<float>";
                         break;
                     case HFunction::Vector_Char :
-                        outfile << "vector<char>";
+                        outfile << "\tvector<char>";
                         break;
                     case HFunction::Vector_String :
-                        outfile << "vector<string>";
+                        outfile << "\tvector<string>";
                         break;
                     case HFunction::Void :
-                        outfile << "vector<string>";
+                        outfile << "\tvector<string>";
                         break;
                 }
                 outfile << " " << var << " = ";
@@ -191,6 +218,9 @@ int main() {
                         case Token::keyword:
                             outfile << tokenDat.getContents() << "(";
                             funcCall = true;
+                            break;
+                        case Token::function_call_continue:
+                            break;
                         default:
                             outfile << tokenDat.getContents();
                             if (funcCall) {
@@ -201,8 +231,12 @@ int main() {
                     current = current->left;
                     //outfile << current->data.getContents()
                 }
+                outfile << ";\n";
+                
 
         }
+
+        //TODO closing brackets on functions
 
 
     }

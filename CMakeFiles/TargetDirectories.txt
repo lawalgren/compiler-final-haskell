@@ -1,0 +1,3 @@
+/home/sapsey/Documents/compiler-final-haskell/CMakeFiles/rebuild_cache.dir
+/home/sapsey/Documents/compiler-final-haskell/CMakeFiles/compiler_final_haskell.dir
+/home/sapsey/Documents/compiler-final-haskell/CMakeFiles/edit_cache.dir
