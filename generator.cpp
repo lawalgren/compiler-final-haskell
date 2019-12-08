@@ -84,7 +84,36 @@ int main() {
         outfile << " " << func.name << "(";
         int counter = 0;
         for (auto param : func.params_order) {
-            outfile << func.params.at(param) << " " << param;
+            switch(func.params.at(param)) {
+                case HFunction::Integer :
+                outfile << "int";
+                break;
+            case HFunction::Float :
+                outfile << "float";
+                break;
+            case HFunction::String :
+                outfile << "string";
+                break;
+            case HFunction::Char :
+                outfile << "char";
+                break;
+            case HFunction::Vector_Integer :
+                outfile << "vector<int>";
+                break;
+            case HFunction::Vector_Float :
+                outfile << "vector<float>";
+                break;
+            case HFunction::Vector_Char :
+                outfile << "vector<char>";
+                break;
+            case HFunction::Vector_String :
+                outfile << "vector<string>";
+                break;
+            case HFunction::Void :
+                outfile << "vector<string>";
+                break;
+            }
+            outfile << " " << param;
             if (counter != func.params_order.size() - 1)
                 outfile << ", ";
             
@@ -127,7 +156,7 @@ int main() {
                         outfile << "vector<string>";
                         break;
                 }
-                outfile << " " << var << " ";
+                outfile << " " << var << " = ";
                 while (current != nullptr || !stk.empty()) {
                     while (current == nullptr && !stk.empty()) {
                         current = stk.top()->right;
