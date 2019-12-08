@@ -192,6 +192,8 @@ int main() {
                             outfile << tokenDat.getContents() << "(";
                             funcCall = true;
                             break;
+                        case Token::function_call_continue:
+                            break;
                         default:
                             outfile << tokenDat.getContents();
                             if (funcCall) {
@@ -202,7 +204,7 @@ int main() {
                     current = current->left;
                     //outfile << current->data.getContents()
                 }
-                outfile << "\n";
+                outfile << ";\n";
 
         }
 
