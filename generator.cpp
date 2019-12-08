@@ -191,6 +191,7 @@ int main() {
                         case Token::keyword:
                             outfile << tokenDat.getContents() << "(";
                             funcCall = true;
+                            break;
                         default:
                             outfile << tokenDat.getContents();
                             if (funcCall) {
@@ -201,6 +202,7 @@ int main() {
                     current = current->left;
                     //outfile << current->data.getContents()
                 }
+                outfile << "\n";
 
         }
 
