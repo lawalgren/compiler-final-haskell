@@ -157,6 +157,7 @@ int main() {
                         break;
                 }
                 outfile << " " << var << " = ";
+                bool funcCall = false;
                 while (current != nullptr || !stk.empty()) {
                     while (current == nullptr && !stk.empty()) {
                         current = stk.top()->right;
@@ -187,9 +188,17 @@ int main() {
                         case Token::v_h_float:
                             outfile << "{" << tokenDat.getContents().substr(1,tokenDat.getContents().length - 2) << "}";
                             break;
+                        case Token::keyword:
+                            outfile << tokenDat.getContents() << "(";
+                            funcCall = true;
                         default:
                             outfile << tokenDat.getContents();
+                            if (funcCall) {
+                                outfile << ")";
+                                funcCall = false;
+                            }
                     }
+                    current = current->left;
                     //outfile << current->data.getContents()
                 }
 
