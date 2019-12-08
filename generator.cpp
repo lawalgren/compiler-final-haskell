@@ -156,7 +156,7 @@ int main() {
                         case Token::v_h_string:
                         case Token::v_h_int:
                         case Token::v_h_float:
-                            outfile << "{" << tokenDat.getContents().substr(1,tokenDat.getContents().length - 2) << "}";
+                            outfile << "{" << tokenDat.getContents().substr(1,tokenDat.getContents().length() - 2) << "}";
                             break;
                         default:
                             outfile << tokenDat.getContents();
