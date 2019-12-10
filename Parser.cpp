@@ -150,7 +150,8 @@ public:
             return;
         auto a = assignment();
         vars[get<0>(a)] = make_tuple(get<1>(a), get<2>(a));
-        func.where_order.emplace_back(get<0>(a));
+        pair<string, int> key = {get<0>(a), 0};
+        func.where_order.emplace_back(key);
         where(vars, func);
     }
 
@@ -432,27 +433,32 @@ public:
     }
 
     // let <assignment> <commands> | <variable> <- getLine <commands> | <functionCall> <commands> | <epsilon>
-    pair<vector<HExpression>,map<string, tuple<HExpression, HFunction::Type>>> commands(HFunction &func) {
+    pair<vector<pair<HExpression,int>>,map<string, tuple<HExpression, HFunction::Type>>> commands(HFunction &func) {
         Token tok = t.peek();
-        vector<HExpression> command_list;
+        vector<pair<HExpression, int>> command_list;
         map<string, tuple<HExpression, HFunction::Type>> lets;
+        int i = 0;
         while(tok.getType() != Token::end_of_function && tok.getType() != Token::eof) {
             tok = t.next();
             if(tok.getContents() == "let") {
                 auto a = assignment();
                 lets[get<0>(a)] = make_tuple(get<1>(a), get<2>(a));
-                func.where_order.emplace_back(get<0>(a));
+                pair<string, int> key = {get<0>(a), i};
+                func.where_order.emplace_back(key);
             } else if (tok.getType() == Token::get_line) {
                 auto* nested = new HExpression(Token(Token::name, tok.getContents()));
                 HExpression he(Token(Token::get_line), nullptr, nested);
-                command_list.emplace_back(he);
+                pair<HExpression, int> key = {he, i};
+                command_list.emplace_back(key);
             } else {
                 auto* he = new HExpression();
                 functionCall(he);
-                command_list.emplace_back(*he);
+                pair<HExpression, int> key = {*he, i};
+                command_list.emplace_back(key);
             }
+            i++;
         }
-        pair<vector<HExpression>,map<string, tuple<HExpression, HFunction::Type>>> ret = {command_list, lets};
+        pair<vector<pair<HExpression,int>>,map<string, tuple<HExpression, HFunction::Type>>> ret = {command_list, lets};
         return ret;
     }
 };
