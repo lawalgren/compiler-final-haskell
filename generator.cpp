@@ -50,6 +50,7 @@ int main() {
 
     
     Parser p = getParser();
+
     //Output function declaration
     for(auto func : p.functions_list ) {
         switch (func.return_type) {
@@ -229,20 +230,14 @@ int main() {
                             }
                     }
                     current = current->left;
-                    //outfile << current->data.getContents()
+                    //outfile << current->data.getContents();
                 }
                 outfile << ";\n";
-                
+            }
 
-        }
-
-        //TODO closing brackets on functions
-
+            if(func.name != "main") outfile << "}\n\n";
 
     }
-
-
-    //vector<HFunction> funcs;
     
     postamble();
     return 0;
