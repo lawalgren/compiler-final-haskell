@@ -15,8 +15,20 @@ string FILE_NAME = "transpiled.cpp";
 void preamble() {
     outfile.open(FILE_NAME);
     if(!outfile.is_open())  cout << "Error Opening output file." << endl;
-    outfile << "#include <iostream>" << endl<< "#include <vector>"<< endl
+    outfile << "#include <iostream>" << endl<< "#include <vector>"<< endl << "#include <sstream>" << endl
     << "#include <string>" << endl << "using namespace std;" << endl;
+
+
+    outfile <<  "\nvector<string> words(string input) { \n"
+                "\tvector<string> result; \n\tistringstream iss(s); \n"  
+                "\tfor(string s: iss; iss >> s; ) \n"
+                    "\t\tresult.push_back(s);    \n return result; \n}\n\n";
+
+    outfile <<  "void putStrLn(string line) { \n"
+                "\t cout << line << endl;\n}\n\n";
+
+    outfile <<  "void getLine(string &line) {\n"
+                "\t getline(cin, line); \n}\n\n";
 }
 
 void function() {
@@ -143,98 +155,106 @@ int main() {
             counter++;
         }
         outfile << ") {\n";
-        //End function Declaration
 
-        if(patternArr[0] != "") {
-            outfile << "\tstring " << patternArr[0] << " = pattern[0];\n";
-            outfile << "\tvector<string> " << patternArr[1] << " = pattern.erase(pattern.begin(), pattern.begin()+1);\n"; 
-        }
+        if(func.purity) {
+            //End function Declaration
 
-        for (auto var : func.where_order) {
-            auto rpart = func.where.at(var);
-                auto current = &get<0>(rpart);
-                stack<HExpression*> stk;
-                auto type = get<1>(rpart);
-                switch (type){
-                    case HFunction::Integer :
-                        outfile << "\tint";
-                        break;
-                    case HFunction::Float :
-                        outfile << "\tfloat";
-                        break;
-                    case HFunction::String :
-                        outfile << "\tstring";
-                        break;
-                    case HFunction::Char :
-                        outfile << "\tchar";
-                        break;
-                    case HFunction::Vector_Integer :
-                        outfile << "\tvector<int>";
-                        break;
-                    case HFunction::Vector_Float :
-                        outfile << "\tvector<float>";
-                        break;
-                    case HFunction::Vector_Char :
-                        outfile << "\tvector<char>";
-                        break;
-                    case HFunction::Vector_String :
-                        outfile << "\tvector<string>";
-                        break;
-                    case HFunction::Void :
-                        outfile << "\tvector<string>";
-                        break;
-                }
-                outfile << " " << var << " = ";
-                bool funcCall = false;
-                while (current != nullptr || !stk.empty()) {
-                    while (current == nullptr && !stk.empty()) {
-                        current = stk.top()->right;
-                        stk.pop();
-                    }
-                    if (current == nullptr)
-                        break;
-                    stk.push(current);
-                    Token tokenDat = current->data;
-                    switch( tokenDat.getType()) {
-                        case Token::multiplicative_op:
-                            if(tokenDat.getContents() != "*" && tokenDat.getContents() != "/") {
-                                if(tokenDat.getContents() == "`mod`")
-                                    outfile << " % ";
-                                else if(tokenDat.getContents() == "`div`")
-                                    outfile << " / ";
-                            }
-                            else {
-                                outfile << tokenDat.getContents();
-                            }
-                            break;
-                        case Token::v_empty:
-                            outfile << "{}";
-                            break;
-                        case Token::v_h_char:
-                        case Token::v_h_string:
-                        case Token::v_h_int:
-                        case Token::v_h_float:
-                            outfile << "{" << tokenDat.getContents().substr(1,tokenDat.getContents().length() - 2) << "}";
-                            break;
-                        case Token::keyword:
-                            outfile << tokenDat.getContents() << "(";
-                            funcCall = true;
-                            break;
-                        case Token::function_call_continue:
-                            break;
-                        default:
-                            outfile << tokenDat.getContents();
-                            if (funcCall) {
-                                outfile << ")";
-                                funcCall = false;
-                            }
-                    }
-                    current = current->left;
-                    //outfile << current->data.getContents();
-                }
-                outfile << ";\n";
+            if(patternArr[0] != "") {
+                outfile << "\tstring " << patternArr[0] << " = pattern[0];\n";
+                outfile << "\tvector<string> " << patternArr[1] << " = pattern.erase(pattern.begin(), pattern.begin()+1);\n"; 
             }
 
+            for (auto var : func.where_order) {
+                auto rpart = func.where.at(var.first);
+                    auto current = &get<0>(rpart);
+                    stack<HExpression*> stk;
+                    auto type = get<1>(rpart);
+                    switch (type){
+                        case HFunction::Integer :
+                            outfile << "\tint";
+                            break;
+                        case HFunction::Float :
+                            outfile << "\tfloat";
+                            break;
+                        case HFunction::String :
+                            outfile << "\tstring";
+                            break;
+                        case HFunction::Char :
+                            outfile << "\tchar";
+                            break;
+                        case HFunction::Vector_Integer :
+                            outfile << "\tvector<int>";
+                            break;
+                        case HFunction::Vector_Float :
+                            outfile << "\tvector<float>";
+                            break;
+                        case HFunction::Vector_Char :
+                            outfile << "\tvector<char>";
+                            break;
+                        case HFunction::Vector_String :
+                            outfile << "\tvector<string>";
+                            break;
+                        case HFunction::Void :
+                            outfile << "\tvector<string>";
+                            break;
+                    }
+                    outfile << " " << var.first << " = ";
+                    bool funcCall = false;
+                    while (current != nullptr || !stk.empty()) {
+                        while (current == nullptr && !stk.empty()) {
+                            current = stk.top()->right;
+                            stk.pop();
+                        }
+                        if (current == nullptr)
+                            break;
+                        stk.push(current);
+                        Token tokenDat = current->data;
+                        switch( tokenDat.getType()) {
+                            case Token::multiplicative_op:
+                                if(tokenDat.getContents() != "*" && tokenDat.getContents() != "/") {
+                                    if(tokenDat.getContents() == "`mod`")
+                                        outfile << " % ";
+                                    else if(tokenDat.getContents() == "`div`")
+                                        outfile << " / ";
+                                }
+                                else {
+                                    outfile << tokenDat.getContents();
+                                }
+                                break;
+                            case Token::v_empty:
+                                outfile << "{}";
+                                break;
+                            case Token::v_h_char:
+                            case Token::v_h_string:
+                            case Token::v_h_int:
+                            case Token::v_h_float:
+                                outfile << "{" << tokenDat.getContents().substr(1,tokenDat.getContents().length() - 2) << "}";
+                                break;
+                            case Token::keyword:
+                                outfile << tokenDat.getContents() << "(";
+                                funcCall = true;
+                                break;
+                            case Token::function_call_continue:
+                                break;
+                            default:
+                                outfile << tokenDat.getContents();
+                                if (funcCall) {
+                                    outfile << ")";
+                                    funcCall = false;
+                                }
+                        }
+                        current = current->left;
+                        //outfile << current->data.getContents();
+                    }
+                    outfile << ";\n";
+                }
+        }
+        else {
+            int i = 0, j = 0;
+            while(i < func.where_order.size() && j < func.commands.size()) {
+                
+            }
+        }
             if(func.name != "main") outfile << "}\n\n";
 
     }
