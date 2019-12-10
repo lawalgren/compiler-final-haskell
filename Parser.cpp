@@ -434,18 +434,20 @@ public:
 
     // let <assignment> <commands> | <variable> <- getLine <commands> | <functionCall> <commands> | <epsilon>
     pair<vector<pair<HExpression,int>>,map<string, tuple<HExpression, HFunction::Type>>> commands(HFunction &func) {
-        Token tok = t.peek();
+        Token tok = t.next();
         vector<pair<HExpression, int>> command_list;
         map<string, tuple<HExpression, HFunction::Type>> lets;
         int i = 0;
         while(tok.getType() != Token::end_of_function && tok.getType() != Token::eof) {
-            tok = t.next();
+            tok = t.peek();
             if(tok.getContents() == "let") {
+                t.next();
                 auto a = assignment();
                 lets[get<0>(a)] = make_tuple(get<1>(a), get<2>(a));
                 pair<string, int> key = {get<0>(a), i};
                 func.where_order.emplace_back(key);
             } else if (tok.getType() == Token::get_line) {
+                t.next();
                 auto* nested = new HExpression(Token(Token::name, tok.getContents()));
                 HExpression he(Token(Token::get_line), nullptr, nested);
                 pair<HExpression, int> key = {he, i};
