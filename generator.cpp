@@ -23,8 +23,8 @@ void typing(HFunction::Type type);
 
     outfile <<  "\nvector<string> words(string input) { \n"
                 "\tvector<string> result; \n\tistringstream iss(s); \n"  
-                "\tfor(string s: iss; iss >> s; ) \n"
-                    "\t\tresult.push_back(s);    \n return result; \n}\n\n";
+                "\twhile(iss >> s)\n"
+                    "\t\tresult.push_back(s);    \n\treturn result; \n}\n\n";
 
     outfile <<  "void putStrLn(string line) { \n"
                 "\t cout << line << endl;\n}\n\n";
