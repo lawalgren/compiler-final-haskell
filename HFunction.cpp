@@ -19,11 +19,11 @@ struct HFunction{
     map<string, tuple<HExpression, Type>> where; // map variable name to value
     map<string, Type> params; // list of parameters to the function
     vector<HLogical> logic_order;
-    vector<string> where_order;
+    vector<pair<string, int>> where_order;
     vector<string> params_order;
     bool purity;
     Type return_type;
-    vector<HExpression> commands;
+    vector<pair<HExpression, int>> commands;
 
 };
 
