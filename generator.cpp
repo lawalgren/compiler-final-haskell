@@ -43,7 +43,7 @@ void function() {
 
 Parser getParser() {
     ifstream in;
-    in.open("test1.txt");
+    in.open("program.hs");
     string progFinal, prog;
     while (!in.eof()) {
         getline(in, prog);
@@ -97,7 +97,10 @@ int main() {
                 outfile << "vector<string>";
             break;
             case HFunction::Void :
-                outfile << "void";
+                if(func.name != "main")
+                    outfile << "void";
+                else 
+                    outfile << "int";
             break;
         }
         string patternArr[2];
